@@ -44,7 +44,7 @@ def make_win2():
               [sg.Combo(['  '+str(num) if num<10 else ' '+str(num) for num in range(24)], key='-HORA-'),
               sg.Combo(['  '+str(num) if num<10 else ' '+str(num) for num in range(1,24)], key='-DURACAO-')],
               [sg.Button('Sair'), sg.Button('Criar Voo')]]
-    return sg.Window('Window Title', layout, finalize=True)
+    return sg.Window("Marcar Voo", layout, finalize=True)
 
 def criarVoo(aviao, idCidadeOrigem, idCidadeDestino, ano, mes, dia, horaPartida, duracao):
     """
