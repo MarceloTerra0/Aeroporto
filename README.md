@@ -1,10 +1,10 @@
-Prova NUTI - NUTI test
+Prova NUTI - NUTI Test
 
 Objetivo - Criar um sistema de aeroporto que se conecte a um banco de dados e que crie novos voos (Somente voos possiveis)
+
 Goal     - Create an airport system that connects to a database and creates new flights (Only possible flights)
 
-Feito com Python & PySimpleGUI
-Made with Python & PySimpleGUI
+Feito com Python & PySimpleGUI - Made with Python & PySimpleGUI
 
 Tela Principal - Main Screen
 ![](media/Aeroporto.gif)
