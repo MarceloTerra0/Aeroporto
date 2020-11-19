@@ -1,11 +1,11 @@
 #TODO
-#mudar IDCidade para o nome da cidade
-#mudar IDAviao  para o nome do avião
+#Nomes das cidades e do aviao na tela de criacao de voo
 
 import mysql.connector
 from datetime import datetime, timedelta
 import PySimpleGUI as sg
 import os
+
 
 def make_win1(): 
     menu_layout = [['Voos', ['Cadastrar novo voo', 'Planilha de voos']],['Informações', ['Avioes', 'Cidades']]]
@@ -101,7 +101,8 @@ def criarVoo(aviao, idCidadeOrigem, idCidadeDestino, ano, mes, dia, horaPartida,
             return("Voo impossível, pois o avião não estará disponível nesta data, horário nem localização")
 
 def main():
-    SQLColumns =    ['id', 'idAviao',  'idCidadeOrigem',   'idCidadeDestino',   'ano', "mes", 'dia', 'horario', 'duracao']
+    SQLColumns =    ['voo.id', 'aviao.nome', 'c1.nome', 'c2.nome', 'voo.ano', "voo.mes", 'voo.dia', 'voo.horario', 'voo.duracao']
+    #SQLColumns =    ['id', 'idAviao',  'idCidadeOrigem',   'idCidadeDestino',   'ano', "mes", 'dia', 'horario', 'duracao']
     user_interface= ['ID', 'ID Avião', 'ID Cidade Origem', 'ID Cidade Destino', 'Ano', 'Mês', 'Dia', 'Horario', 'Duração']
     sg.theme('Reddit')
     window1 = make_win1()
@@ -131,6 +132,8 @@ def main():
                     elif values2['-CIDADEORI-'] == values2['-CIDADEDEST-']:
                         sg.popup_no_wait('Rota inválida')
                     else:
+                        #mycursor.execute("SELECT * FROM aviao ORDER BY id")
+                        #myresult = mycursor.fetchall()
                         string = criarVoo(values2['-AERONAVE-'],values2['-CIDADEORI-'],values2['-CIDADEDEST-']
                                         ,values2['-ANO-'],values2['-MES-'],values2['-DIA-'],values2['-HORA-'],values2['-DURACAO-'])
                         sg.popup_no_wait(f"{string}")
@@ -146,13 +149,11 @@ def main():
             oldEvents1 = event
             if event == sg.WIN_CLOSED or event == 'Exit':
                 break
-
             if old1Event:
                 old2Event = event
                 old1Event = None
             else:
                 old1Event = event
-
             if values['-COMBO-'] in user_interface and old2Event!='Avioes' and old2Event!='Cidades':
                 index = user_interface.index(values['-COMBO-'])
                 """
@@ -160,7 +161,13 @@ def main():
                 %s insere aspas simples em strings, impossibilitando a leitura dos dados,
                 então a linha abaixo só será executada com comandos válidos (Usando a lista SQLColumns).
                 """
-                mycursor.execute(f"SELECT * FROM voo ORDER BY {SQLColumns[index]}" if values[1]==True else f"SELECT * FROM voo ORDER BY {SQLColumns[index]} DESC")
+                sql = (f"SELECT {', '.join(SQLColumns)} FROM voo "
+                        "JOIN aviao ON voo.idAviao = aviao.id "
+                        "JOIN cidade as c1 ON voo.idCidadeOrigem = c1.id "
+                        "JOIN cidade as c2 ON voo.idCidadeDestino = c2.id "
+                        f"ORDER BY {SQLColumns[index]} {'ASC' if values[1]==True else 'DESC' }")
+                print(sql)
+                mycursor.execute(sql, )
                 myresult = mycursor.fetchall()
                 window1.Element('-TABLE-').update(myresult)
             if values[0] == 'Cadastrar novo voo':
@@ -179,6 +186,7 @@ def main():
                 window1.Element('-TABLE-').update(myresult)
 
 if __name__ == '__main__':
+    
     with open('password.txt') as arq:
         password = str(arq.readline())
 
@@ -193,7 +201,7 @@ if __name__ == '__main__':
     sql = "SELECT * FROM voo"
     mycursor.execute(sql, )
     myresult = mycursor.fetchall()
-    headings = ['  ID  ', 'ID Avião', 'ID Cidade Origem', 'ID Cidade Destino', ' Ano ', ' Mês ', ' Dia ', 'Horario', 'Duração']
+    headings = ['  ID  ', '  Avião  ', ' Cidade Origem  ', ' Cidade Destino ', ' Ano ', ' Mês ', ' Dia ', 'Horario', 'Duração']
     listboxContents = [list(lista) for lista in myresult]
 
     main()
