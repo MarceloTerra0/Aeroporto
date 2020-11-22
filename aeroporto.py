@@ -1,8 +1,8 @@
 import mysql.connector
 import PySimpleGUI as sg
-from funcoes.criarVoo import criarVoo
-from funcoes.criarJanelas import make_win1, make_win2, make_win3
-from funcoes.tableUpdates import tableUpdate, tableUpdateFiltro
+from funcs.criarVoo import criarVoo
+from funcs.criarJanelas import make_win1, make_win2, make_win3
+from funcs.tableUpdates import tableUpdate, tableUpdateFiltro
 
 def main():
     janelaPrincipal = make_win1(listaVoos, cabecalhos)
