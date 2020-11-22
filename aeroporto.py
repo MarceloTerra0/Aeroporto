@@ -1,57 +1,46 @@
-#TODO
-#aspas simples ou duplas? ARRUMAR!
 import mysql.connector
 import PySimpleGUI as sg
 from funcoes.criarVoo import criarVoo
 from funcoes.criarJanelas import make_win1, make_win2, make_win3
+from funcoes.tableUpdates import tableUpdate, tableUpdateFiltro
 
 def main():
-    window1 = make_win1(tabelaVoosInicial, cabecalhos)
-    window2 = window3 = None
+    janelaPrincipal = make_win1(listaVoos, cabecalhos)
+    janelaCriacaoVoos = janelaCancelamentoVoos = None
 
     while True:
-        event, values = window1.read(timeout=100)
-        if event == sg.WIN_CLOSED or event == 'Sair':
+        event1, values1 = janelaPrincipal.read(timeout=100)
+        if event1 == sg.WIN_CLOSED or event1 == 'Sair':
             break
-        if event == 'Aplicar Filtro':
-            index = filtrosInterfaceUsuario.index(values['-COMBO-'])
-            """
-            por mais que utilizar uma f string esteja expondo o programa a SQLInjection,
-            %s insere aspas simples em strings, impossibilitando a leitura dos dados,
-            então a linha abaixo só será executada com comandos válidos (Usando a lista SQLColumns).
-            """
-            sql = (f"SELECT {', '.join(SQLColumns)} FROM voo "
-                    "JOIN aviao ON voo.idAviao = aviao.id "
-                    "JOIN cidade as c1 ON voo.idCidadeOrigem = c1.id "
-                    "JOIN cidade as c2 ON voo.idCidadeDestino = c2.id "
-                    f"ORDER BY {SQLColumns[index]} {'ASC' if values[1]==True else 'DESC' }")
-            SQLCursor.execute(sql, )
-            myresult = SQLCursor.fetchall()
-            window1.Element('-TABLE-').update(myresult)
-        if values[0] == 'Cadastrar novo voo':
-            window2 = make_win2(SQLCursor)
-        if values[0] == 'Avioes':
-            SQLCursor.execute("SELECT * FROM aviao")
-            myresult = SQLCursor.fetchall()
-            window1.Element('-TABLE-').update(myresult)
-        if values[0] == 'Cidades':
-            SQLCursor.execute("SELECT * FROM cidade")
-            myresult = SQLCursor.fetchall()
-            window1.Element('-TABLE-').update(myresult)
-        if values[0] == 'Planilha de voos':
-            SQLCursor.execute(SQLOrderVooId)
-            myresult = SQLCursor.fetchall()
-            window1.Element('-TABLE-').update(myresult)
-        if values[0] == 'Cancelar voo':
-            SQLCursor.execute("SELECT id FROM voo")
-            myresult = SQLCursor.fetchall()
-            window3 = make_win3([num[0] for num in myresult])
+        if event1 == 'Aplicar Filtro':
+            tableUpdateFiltro(SQLCursor=SQLCursor, filtrosInterfaceUsuario=filtrosInterfaceUsuario,
+                SQLColumns=SQLColumns, values1=values1, janelaPrincipal=janelaPrincipal)
+        if values1[0] == 'Cadastrar novo voo':
+            if not janelaCancelamentoVoos:
+                tableUpdate(SQLCursor=SQLCursor, SQLQuery=SQLInicial, window=janelaPrincipal)
+                janelaCriacaoVoos = make_win2(SQLCursor)
+            else:
+                sg.popup_no_wait('Feche a janela de cancelamento de voos primeiro')
+        if values1[0] == 'Avioes':
+            tableUpdate(SQLCursor=SQLCursor, SQLQuery='SELECT * FROM aviao', window=janelaPrincipal)
+        if values1[0] == 'Cidades':
+            tableUpdate(SQLCursor=SQLCursor, SQLQuery='SELECT * FROM cidade', window=janelaPrincipal)
+        if values1[0] == 'Planilha de voos':
+            tableUpdate(SQLCursor=SQLCursor, SQLQuery=SQLInicial, window=janelaPrincipal)
+        if values1[0] == 'Cancelar voo':
+            if not janelaCriacaoVoos:
+                tableUpdate(SQLCursor=SQLCursor, SQLQuery=SQLInicial, window=janelaPrincipal)
+                SQLCursor.execute('SELECT id FROM voo')
+                idsVoos = SQLCursor.fetchall()
+                janelaCancelamentoVoos = make_win3([num[0] for num in idsVoos])
+            else:
+                sg.popup_no_wait('Feche a janela de criação de voos primeiro')
 
-        if window2:
-            event2, values2 = window2.read(timeout=100)
+        if janelaCriacaoVoos:
+            event2, values2 = janelaCriacaoVoos.read(timeout=100)
             if event2 == sg.WIN_CLOSED or event2 == 'Sair':
-                window2.close()
-                window2 = None
+                janelaCriacaoVoos.close()
+                janelaCriacaoVoos = None
                 continue
             if event2 == 'Criar Voo':
                 if '' in values2.values():
@@ -59,58 +48,59 @@ def main():
                 elif values2['-CIDADEORI-'] == values2['-CIDADEDEST-']:
                     sg.popup_no_wait('Rota inválida')
                 else:
-                    string = criarVoo(mydb, SQLCursor, values2['-AERONAVE-'].split(' ')[0],values2['-CIDADEORI-'].split(' ')[0],
+                    resultadoCriarVoo = str(criarVoo(aeroportoDB, SQLCursor, values2['-AERONAVE-'].split(' ')[0],values2['-CIDADEORI-'].split(' ')[0],
                                     values2['-CIDADEDEST-'].split(' ')[0],values2['-ANO-'],values2['-MES-'],
-                                    values2['-DIA-'],values2['-HORA-'],values2['-DURACAO-'])
-                    sg.popup_no_wait(f"{string}")
-                    if string == "Voo inserido":
-                        window2.close()
-                        window2 = None
+                                    values2['-DIA-'],values2['-HORA-'],values2['-DURACAO-'], qtdAeronaves, qtdCidades))
+                    if resultadoCriarVoo:
+                        sg.popup_no_wait(resultadoCriarVoo)
+                        if resultadoCriarVoo == 'Voo inserido':
+                            janelaCriacaoVoos.close()
+                            janelaCriacaoVoos = None
+                            tableUpdateFiltro(SQLCursor=SQLCursor, filtrosInterfaceUsuario=filtrosInterfaceUsuario,
+                                SQLColumns=SQLColumns, values1=values1, janelaPrincipal=janelaPrincipal)
                 continue
-
-        if window3:
-            event3, values3 = window3.read(timeout=100)
+        if janelaCancelamentoVoos:
+            event3, values3 = janelaCancelamentoVoos.read(timeout=100)
             if event3 == sg.WIN_CLOSED or event3 == 'Sair':
-                window3.close()
-                window3 = None
+                janelaCancelamentoVoos.close()
+                janelaCancelamentoVoos = None
                 continue
             if event3 == 'Cancelar Voo':
                 if '' in values3.values():
                     sg.popup_no_wait('Dados Faltando')
                 else:
                     SQLDeletaVoo = 'DELETE FROM voo WHERE id = %s'
-                    values = (values3["-IDCANCELA-"], )
-                    SQLCursor.execute(SQLDeletaVoo, values, )
-                    mydb.commit()
-                    sg.popup_no_wait('Voo cancelado com sucesso!')
-                    window3.close()
-                    window3 = None
-  
+                    vooDeletado = (values3['-IDCANCELA-'], )
+                    SQLCursor.execute(SQLDeletaVoo, vooDeletado, )
+                    aeroportoDB.commit()
+                    if SQLCursor.rowcount == 1:
+                        sg.popup_no_wait('Voo cancelado com sucesso!')
+                        janelaCancelamentoVoos.close()
+                        janelaCancelamentoVoos = None
+                        tableUpdateFiltro(SQLCursor=SQLCursor, filtrosInterfaceUsuario=filtrosInterfaceUsuario,
+                            SQLColumns=SQLColumns, values1=values1, janelaPrincipal=janelaPrincipal)
+                    else:
+                        sg.popup_no_wait('Voo inexistente!')
+
+
 if __name__ == '__main__':
     with open('password.txt') as arq:
         password = str(arq.readline())
 
-    mydb = mysql.connector.connect(
-        host="localhost",
-        user="root",
+    aeroportoDB = mysql.connector.connect(
+        host='localhost',
+        user='root',
         password=password,
-        database="aeroporto"
+        database='aeroporto'
     )
 #Setup inicial
-
-    #SQL Queries
-    SQLColumns =             ['voo.id', 'aviao.nome', 'c1.nome'         , 'c2.nome'          , 'voo.ano', "voo.mes", 'voo.dia', 'voo.horario', 'voo.duracao']
+    SQLCursor = aeroportoDB.cursor()
+    sg.theme('Reddit')
+    #SQL Queries & Informações da UI
+    SQLColumns =             ['voo.id', 'aviao.nome', 'c1.nome'         , 'c2.nome'          , 'voo.ano', 'voo.mes', 'voo.dia', 'voo.horario', 'voo.duracao']
     filtrosInterfaceUsuario= ['ID'    , 'ID Avião'  , 'ID Cidade Origem', 'ID Cidade Destino', 'Ano'    , 'Mês'    , 'Dia'    , 'Horario',     'Duração'    ]
     cabecalhos =             ['  ID  ', '  Avião  ' , ' Cidade Origem  ', ' Cidade Destino ' , ' Ano '  , ' Mês '  , ' Dia '  , 'Horario',      'Duração'   ]
-
-    sg.theme('Reddit')
-    SQLOrderVooId = (f"SELECT {', '.join(SQLColumns)} FROM voo "
-                    "JOIN aviao ON voo.idAviao = aviao.id "
-                    "JOIN cidade as c1 ON voo.idCidadeOrigem = c1.id "
-                    "JOIN cidade as c2 ON voo.idCidadeDestino = c2.id "
-                    "ORDER BY voo.id ASC")
-
-    SQLCursor = mydb.cursor()
+    
     SQLAvioes = 'SELECT * FROM aviao'
     SQLCursor.execute(SQLAvioes, )
     aeronavesResult = SQLCursor.fetchall()
@@ -128,8 +118,7 @@ if __name__ == '__main__':
                     "ORDER BY voo.id ASC")
     SQLCursor.execute(SQLInicial, )
     listaVoos = SQLCursor.fetchall()
-    tabelaVoosInicial = [list(voo) for voo in listaVoos]
     main()
     
     SQLCursor.close()
-    mydb.close()
+    aeroportoDB.close()
