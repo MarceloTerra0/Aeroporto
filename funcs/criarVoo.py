@@ -28,11 +28,12 @@ def criarVoo(aeroportoDB, SQLCursor, aviao, idCidadeOrigem, idCidadeDestino, ano
         elif int(aviao) < 0 or int(aviao) > qtdAeronaves:
             return("Avião inválido")
     except ValueError:
-        return("Data Inválida")
+        return("Data ou horário Inválido")
     except:
         return("Avião ou horário/duração inválido")
 
     SQLUltimoVooAviao = "SELECT * FROM voo WHERE idAviao = %s ORDER BY id DESC LIMIT 1"
+    SQLInserirVoo = "INSERT INTO voo (idAviao,idCidadeOrigem,idCidadeDestino,ano,mes,dia,horario,duracao) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
     SQLValues = (aviao, )
     SQLCursor.execute(SQLUltimoVooAviao, SQLValues)
     myresult = SQLCursor.fetchall()
@@ -40,7 +41,7 @@ def criarVoo(aeroportoDB, SQLCursor, aviao, idCidadeOrigem, idCidadeDestino, ano
     if not myresult:
         #Caso não exista um voo da aeronave requisitada registrado 
         #anteriormente, o voo é registrado sem a checagem das cidades/horarios
-        SQLInserirVoo = "INSERT INTO voo (idAviao,idCidadeOrigem,idCidadeDestino,ano,mes,dia,horario,duracao) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
+        
         SQLValues = (aviao, idCidadeOrigem, idCidadeDestino, ano, mes, dia, horaPartida, duracao)
         SQLCursor.execute(SQLInserirVoo, SQLValues)
         aeroportoDB.commit() 
@@ -48,7 +49,6 @@ def criarVoo(aeroportoDB, SQLCursor, aviao, idCidadeOrigem, idCidadeDestino, ano
         #Caso exista um voo anterior da aeronave requisitada
         for x in myresult:
             _,_,_,idCidadeDestinoUltimoVoo,anoUltimoVoo,mesUltimoVoo,diaUltimoVoo,horarioUltimoVoo,duracaoUltimoVoo = x
-
         dataUltimoVoo = datetime(year = anoUltimoVoo, month= mesUltimoVoo, day= diaUltimoVoo, hour= horarioUltimoVoo) + timedelta(hours=duracaoUltimoVoo)
         if dataVoo >= dataUltimoVoo and int(idCidadeOrigem) == idCidadeDestinoUltimoVoo:
             values = (aviao, idCidadeOrigem, idCidadeDestino, ano, mes, dia, horaPartida, duracao)

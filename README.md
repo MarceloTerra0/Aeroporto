@@ -7,10 +7,13 @@ Goal     - Create an airport system that connects to a database and creates new 
 Feito com Python & PySimpleGUI - Made with Python & PySimpleGUI
 
 Tela Principal - Main Screen
-![](media/Aeroporto.gif)
+![](media/Aeroporto_MainMenu.gif)
 
 Tela de criação de voos- Flight creation screen
-![](media/Aeroporto2.gif)
+![](media/Aeroporto_CriacaoVoo.gif)
+
+Tela de cancelamento de voos - Flight cancelation screen
+![](media/Aeroporto_CancelarVoo.gif)
 
 Enunciado do problema:
 
