@@ -2,9 +2,8 @@ from datetime import datetime, timedelta
 
 def criarVoo(aeroportoDB, SQLCursor, aviao, idCidadeOrigem, idCidadeDestino, ano, mes, dia, horaPartida, duracao, qtdAeronaves, qtdCidades):
     """
-    Não é possível a inserção não ordenada de um voo.
+    Não é possível a inserção não ordenada de um voo de um mesmo avião.
     Exemplo:
-
     ___________________________________________________
     | ID  Aviao  CidOri CidDest   Data    Hora Duracao|
     |_________________________________________________|
@@ -20,50 +19,49 @@ def criarVoo(aeroportoDB, SQLCursor, aviao, idCidadeOrigem, idCidadeDestino, ano
     """
 
     try:
+        dataVoo = datetime(year=int(ano), month=int(mes), day =int(dia), hour= int(horaPartida))
+
         if int(horaPartida) < 0 or int(horaPartida) > 24:
             return("Horário de partida inválido")
         elif int(duracao) <= 0:
             return("Duração de voo inválida")
         elif int(aviao) < 0 or int(aviao) > qtdAeronaves:
             return("Avião inválido")
+    except ValueError:
+        return("Data Inválida")
     except:
-        return("Valor(es) inválido(s)")
+        return("Avião ou horário/duração inválido")
 
-    
-    sql = "SELECT * FROM voo WHERE idAviao = %s ORDER BY id DESC LIMIT 1"
+    SQLUltimoVooAviao = "SELECT * FROM voo WHERE idAviao = %s ORDER BY id DESC LIMIT 1"
     SQLValues = (aviao, )
-    SQLCursor.execute(sql, SQLValues)
+    SQLCursor.execute(SQLUltimoVooAviao, SQLValues)
     myresult = SQLCursor.fetchall()
-    SQLInserirVoo = "INSERT INTO voo (idAviao,idCidadeOrigem,idCidadeDestino,ano,mes,dia,horario,duracao) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
+
     if not myresult:
-        #Caso não exista um voo da aeronave requisitada registrado anteriormente, o voo é registrado sem checagens adicionais.
+        #Caso não exista um voo da aeronave requisitada registrado 
+        #anteriormente, o voo é registrado sem a checagem das cidades/horarios
+        SQLInserirVoo = "INSERT INTO voo (idAviao,idCidadeOrigem,idCidadeDestino,ano,mes,dia,horario,duracao) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
         SQLValues = (aviao, idCidadeOrigem, idCidadeDestino, ano, mes, dia, horaPartida, duracao)
         SQLCursor.execute(SQLInserirVoo, SQLValues)
-        aeroportoDB.commit()
-        return(SQLCursor.rowcount, "Voo inserido.")
+        aeroportoDB.commit() 
     else:
         #Caso exista um voo anterior da aeronave requisitada
         for x in myresult:
             _,_,_,idCidadeDestinoUltimoVoo,anoUltimoVoo,mesUltimoVoo,diaUltimoVoo,horarioUltimoVoo,duracaoUltimoVoo = x
-        
-        try:
-            dataVoo = datetime(year=int(ano), month=int(mes), day =int(dia), hour= int(horaPartida))
-        except ValueError:
-            return("Data Inválida")
 
         dataUltimoVoo = datetime(year = anoUltimoVoo, month= mesUltimoVoo, day= diaUltimoVoo, hour= horarioUltimoVoo) + timedelta(hours=duracaoUltimoVoo)
-
         if dataVoo >= dataUltimoVoo and int(idCidadeOrigem) == idCidadeDestinoUltimoVoo:
             values = (aviao, idCidadeOrigem, idCidadeDestino, ano, mes, dia, horaPartida, duracao)
             SQLCursor.execute(SQLInserirVoo, values)
             aeroportoDB.commit()
-            if SQLCursor.rowcount == 1:
-                return("Voo inserido")
-            else:
-                return("Erro ao inserir voo")
         elif dataVoo >= dataUltimoVoo and int(idCidadeOrigem) != idCidadeDestinoUltimoVoo:
             return("Voo impossível, pois o avião não estará na cidade de origem do voo")
         elif dataVoo < dataUltimoVoo and int(idCidadeOrigem) == idCidadeDestinoUltimoVoo:
             return("Voo impossivel, pois o aviao não estará disponível nesta data nem hora")
         else:
             return("Voo impossível, pois o avião não estará disponível nesta data, horário nem localização")
+
+    if SQLCursor.rowcount == 1:
+        return("Voo inserido")
+    else:
+        return("Erro ao inserir voo")
