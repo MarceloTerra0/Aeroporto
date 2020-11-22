@@ -78,8 +78,9 @@ def main():
                 if '' in values3.values():
                     sg.popup_no_wait('Dados Faltando')
                 else:
-                    SQLDeletaVoo = f'DELETE FROM voo WHERE id = {values3["-IDCANCELA-"]}'
-                    SQLCursor.execute(SQLDeletaVoo, )
+                    SQLDeletaVoo = 'DELETE FROM voo WHERE id = %s'
+                    values = (values3["-IDCANCELA-"], )
+                    SQLCursor.execute(SQLDeletaVoo, values, )
                     mydb.commit()
                     sg.popup_no_wait('Voo cancelado com sucesso!')
                     window3.close()
