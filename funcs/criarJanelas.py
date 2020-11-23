@@ -32,7 +32,6 @@ def make_win2(SQLCursor):
     SQLCursor.execute(SQLCidadesTotais)
     cidadesTotais = SQLCursor.fetchall()
     cidadesTotais = [f'{i} - {nome[0]}' for i,nome in enumerate(cidadesTotais, start=1)]
-    print(cidadesTotais)
     layout = [[sg.Text('Selecione o dia, mês e ano do voo')],
               [sg.Combo(['  '+str(num) if num<10 else ' '+str(num) for num in range(1,32)], key='-DIA-'), 
               sg.Combo([' '+str(num) if num<10 else ' '+str(num) for num in range(1,13)], key='-MES-'),
